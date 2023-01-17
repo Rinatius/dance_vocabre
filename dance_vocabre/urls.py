@@ -19,7 +19,7 @@ from rest_framework.routers import DefaultRouter
 
 import dance.views as dance_views
 
-api_v1 = r"api/v1"
+api_v1 = r"api/v1/"
 
 router = DefaultRouter()
 

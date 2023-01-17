@@ -21,8 +21,11 @@ def generate_selection_list(words):
     answers = {}
     uischema = {"ui:order": []}
     for word in words:
-        questions["properties"][word] = {"type": "boolean", "title": word.word}
-        answers[word] = True
-        uischema["ui:order"].append(word)
+        questions["properties"][word.word] = {
+            "type": "boolean",
+            "title": word.word,
+        }
+        answers[word.word] = True
+        uischema["ui:order"].append(word.word)
 
     return json.dumps(questions), json.dumps(uischema), json.dumps(answers)

@@ -16,6 +16,12 @@ class AnswerSheet(models.Model):
         help_text="Questions in JSON Schema format",
     )
 
+    uischema = models.TextField(
+        blank=True,
+        null=True,
+        help_text="UI schema for Questions in JSON Schema React Form format",
+    )
+
     correct_answers = models.TextField(
         blank=True,
         null=True,
