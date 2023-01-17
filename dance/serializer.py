@@ -10,6 +10,10 @@ class AnswerSheetSerializer(serializers.ModelSerializer):
 
 
 class AnswerSheetCreateSerializer(serializers.ModelSerializer):
+    questions = serializers.JSONField(read_only=True)
+    uischema = serializers.JSONField(read_only=True)
+    id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = AnswerSheet
-        fields = ["type", "learner"]
+        fields = ["id", "type", "learner", "questions", "uischema"]

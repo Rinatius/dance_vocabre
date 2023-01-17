@@ -8,7 +8,9 @@ def generate_questions(questions_type, learner, amount):
     if questions_type == "qz":
         questions, uischema, answers = generate_quiz(words)
     else:
-        questions, uischema, answers = generate_selection_list(words)
+        questions, uischema, answers = generate_selection_list(
+            words.order_by("order")
+        )
     return questions, uischema, answers
 
 
