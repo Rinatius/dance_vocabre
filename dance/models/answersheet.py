@@ -11,24 +11,24 @@ class AnswerSheet(models.Model):
     type = models.CharField(max_length=2, choices=AnswerSheetType.choices)
 
     questions = models.JSONField(
-        default={},
+        default=dict,
         help_text="Questions in JSON Schema format",
     )
 
     uischema = models.JSONField(
-        default={},
+        default=dict,
         help_text="UI schema for Questions in JSON Schema React Form format",
     )
 
     correct_answers = models.JSONField(
-        default={},
+        default=dict,
         help_text=(
             "Correct answers in JSON format matching schema in Questions"
         ),
     )
 
     learner_answers = models.JSONField(
-        default={},
+        default=dict,
         help_text=(
             "Answers by Learner in JSON format matching schema in Questions"
         ),
