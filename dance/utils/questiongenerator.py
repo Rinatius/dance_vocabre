@@ -4,13 +4,12 @@ from .wordselector import select_words
 
 
 def generate_questions(questions_type, learner, amount):
-    words = select_words(learner, questions_type, amount)
     if questions_type == "qz":
+        words = select_words(learner, amount)
         questions, uischema, answers = generate_quiz(words)
     else:
-        questions, uischema, answers = generate_selection_list(
-            words.order_by("order")
-        )
+        words = select_words(learner, amount)
+        questions, uischema, answers = generate_selection_list(words)
     return questions, uischema, answers
 
 
@@ -30,4 +29,4 @@ def generate_selection_list(words):
         answers[word.word] = True
         uischema["ui:order"].append(word.word)
 
-    return json.dumps(questions), json.dumps(uischema), json.dumps(answers)
+    return questions, uischema, answers
