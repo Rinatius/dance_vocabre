@@ -1,6 +1,16 @@
 from django.db import models
 
+from ..const import Languages
+
 
 class Word(models.Model):
     word = models.CharField(max_length=200)
     order = models.IntegerField()
+    translations = models.ManyToManyField(
+        "self",
+        symmetrical=True,
+        help_text="Translations of the word into other languages and synonyms",
+    )
+    language = models.CharField(
+        max_length=2, choices=Languages.choices, default=Languages.ENGLISH
+    )

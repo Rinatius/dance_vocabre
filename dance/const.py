@@ -21,3 +21,9 @@ class EncounterType(models.TextChoices):
 
 class SelectionType(Enum):
     NOT_MARKED = 1
+
+
+class Languages(models.TextChoices):
+    KYRGYZ = "KY", _("KYRGYZ")
+    ENGLISH = "EN", _("ENGLISH")
+    RUSSIAN = "RU", _("RUSSIAN")
