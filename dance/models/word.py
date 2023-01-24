@@ -14,3 +14,4 @@ class Word(models.Model):
     language = models.CharField(
         max_length=2, choices=Languages.choices, default=Languages.ENGLISH
     )
+    description = models.TextField(null=True)
