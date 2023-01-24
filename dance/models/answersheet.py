@@ -3,7 +3,7 @@ from django.db import models
 from .learner import Learner
 from ..utils.questiongenerator import generate_questions
 from ..utils.answergrader import grade
-from ..const import AnswerSheetType
+from ..const import AnswerSheetType, Languages
 
 
 class AnswerSheet(models.Model):
@@ -43,6 +43,14 @@ class AnswerSheet(models.Model):
 
     score = models.IntegerField(
         null=True, help_text="Percentage of correct responses"
+    )
+
+    test_language = models.CharField(
+        max_length=2, choices=Languages.choices, default=Languages.ENGLISH
+    )
+
+    native_language = models.CharField(
+        max_length=2, choices=Languages.choices, default=Languages.ENGLISH
     )
 
     def generate_questions(self):

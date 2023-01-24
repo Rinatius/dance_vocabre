@@ -21,6 +21,7 @@ class EncounterType(models.TextChoices):
 
 class SelectionType(Enum):
     NOT_MARKED = 1
+    UNKNOWN = 2
 
 
 class Languages(models.TextChoices):
