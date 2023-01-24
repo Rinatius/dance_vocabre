@@ -1,10 +1,9 @@
-import json
-
 from .wordselector import select_words
+from ..const import AnswerSheetType
 
 
-def generate_questions(questions_type, learner, amount):
-    if questions_type == "qz":
+def generate_questions(answersheet_type, learner, amount):
+    if answersheet_type == AnswerSheetType.QUIZ:
         words = select_words(learner, amount)
         questions, uischema, answers = generate_quiz(words)
     else:
