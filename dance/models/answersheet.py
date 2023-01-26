@@ -53,11 +53,6 @@ class AnswerSheet(models.Model):
         max_length=2, choices=Languages.choices, default=Languages.ENGLISH
     )
 
-    def generate_questions(self):
-        self.questions, self.correct_answers = generate_questions(
-            self.type, self.learner, amount=10
-        )
-
     def grade_answers(self):
         self.score = grade(
             self.questions,

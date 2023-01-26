@@ -23,3 +23,19 @@ def select_words(
             enocounters__encounter_type=EncounterType.SELECTION_UNKNOWN
         )
     return selected_words.order_by("order")[:amount]
+
+
+def select_translations(words, language):
+    translations = (
+        Word.objects.all()
+        .filter(language=language)
+        .filter(translations__in=words)
+    )
+    return translations
+
+
+def select_translation(word, language):
+    translations = (
+        Word.objects.all().filter(language=language).filter(translations=word)
+    )
+    return translations

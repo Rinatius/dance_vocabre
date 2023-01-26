@@ -25,7 +25,8 @@ class AnswerSheetViewSet(viewsets.ModelViewSet):
         questions, uischema, answers = generate_questions(
             serializer.validated_data["type"],
             serializer.validated_data["learner"],
-            amount=10,
+            serializer.validated_data["test_language"],
+            serializer.validated_data["native_language"],
         )
         serializer.save(
             questions=questions, uischema=uischema, correct_answers=answers

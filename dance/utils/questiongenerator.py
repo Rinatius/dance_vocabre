@@ -1,10 +1,10 @@
-from .wordselector import select_words
+from .wordselector import select_words, select_translation
 from ..const import AnswerSheetType, SelectionType
 from ..models import Word
 
 
 def generate_questions(
-    answersheet_type, learner, amount, test_language, native_language
+    answersheet_type, learner, test_language, native_language, amount=10
 ):
     if answersheet_type == AnswerSheetType.QUIZ:
         words = select_words(
@@ -23,25 +23,20 @@ def generate_quiz(words, native_language):
     questions = {"properties": {}}
     answers = {}
     uischema = {"ui:order": []}
-    translations = Word.objects.all().filter(native_language=native_language)
-    translation_dicts = set(
-        {"translations": translation.translations, "word": translation.word}
-        for translation in translations
-    )
     for word in words:
-        translation = [
-            translation_dict["word"]
-            for translation_dict in translation_dicts
-            if word.id in translation_dict["translations"]
-        ]
+        translation = list(
+            select_translation(word, native_language).values_list(
+                "word", flat=True
+            )
+        )
         questions["properties"][word.word] = {
             "type": "string",
             "title": ", ".join(translation),
         }
-        answers[word.word] = True
+        answers[word.word] = word.word
         uischema["ui:order"].append(word.word)
 
-    return "", "", ""
+    return questions, uischema, answers
 
 
 def generate_selection_list(words, native_language):

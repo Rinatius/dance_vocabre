@@ -16,7 +16,15 @@ class AnswerSheetCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AnswerSheet
-        fields = ["id", "type", "learner", "questions", "uischema"]
+        fields = [
+            "id",
+            "type",
+            "learner",
+            "test_language",
+            "native_language",
+            "questions",
+            "uischema",
+        ]
 
 
 class AnswerSheetEditSerializer(serializers.ModelSerializer):
