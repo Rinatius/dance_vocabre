@@ -9,13 +9,13 @@ class Encounter(models.Model):
     word = models.ForeignKey(
         Word,
         on_delete=models.CASCADE,
-        related_name="enocounters",
+        related_name="encounters",
         help_text="Word encountered by Learner",
     )
     learner = models.ForeignKey(
         Learner,
         on_delete=models.CASCADE,
-        related_name="enocounters",
+        related_name="encounters",
         help_text="Learner who encountered the Word",
     )
     encounter_type = models.CharField(
