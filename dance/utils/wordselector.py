@@ -39,3 +39,17 @@ def select_translation(word, language):
         Word.objects.all().filter(language=language).filter(translations=word)
     )
     return translations
+
+
+def translate_words(words, language):
+    return [
+        {
+            "word": word.word,
+            "translations": list(
+                word.translations.all()
+                .filter(language=language)
+                .values_list("word", flat=True)
+            ),
+        }
+        for word in words
+    ]
