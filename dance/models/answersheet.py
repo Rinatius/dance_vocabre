@@ -1,5 +1,6 @@
 from django.db import models
 
+from . import Stack
 from .learner import Learner
 from ..utils.questiongenerator import generate_questions
 from ..utils.answergrader import grade
@@ -51,6 +52,24 @@ class AnswerSheet(models.Model):
 
     native_language = models.CharField(
         max_length=2, choices=Languages.choices, default=Languages.ENGLISH
+    )
+
+    stack = models.ForeignKey(
+        Stack,
+        blank=True,
+        null=True,
+        help_text=(
+            "Stack of words that limits word selection for question generation"
+            " for an Answersheet instance. If null, default stack is used"
+            " for this particular user and language."
+        ),
+    )
+    regenerate_stack = models.BooleanField(
+        default=False,
+        help_text=(
+            "Flag indicating that Stack Answrsheet is using to make questions"
+            " should be regenerated"
+        ),
     )
 
     def grade_answers(self):
