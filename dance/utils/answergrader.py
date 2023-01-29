@@ -1,4 +1,4 @@
-from ..const import AnswerSheetType, EncounterType
+from ..const import QuestionType, EncounterType
 from ..models import Word, Encounter
 
 
@@ -32,7 +32,7 @@ def generate_encounter_and_score(
     answer = answersheet.correct_answers[correct_answer_key]
     if normalize(answer) == normalize(learner_answer):
         correct = True
-    if answersheet.type == AnswerSheetType.KNOWN_SELECTION:
+    if answersheet.type == QuestionType.KNOWN_SELECTION:
         encounters.append(
             generate_known_selection_encounter(
                 answersheet.learner, correct_answer_key, correct

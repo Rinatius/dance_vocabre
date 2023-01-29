@@ -1,15 +1,15 @@
 from django.db import models
 
-from . import Stack
+from . import Stack, Collection
 from .learner import Learner
 from ..utils.questiongenerator import generate_questions
 from ..utils.answergrader import grade
-from ..const import AnswerSheetType, Languages
+from ..const import QuestionType, Languages
 
 
 class AnswerSheet(models.Model):
 
-    type = models.CharField(max_length=2, choices=AnswerSheetType.choices)
+    type = models.CharField(max_length=2, choices=QuestionType.choices)
 
     questions = models.JSONField(
         default=dict,
@@ -54,14 +54,16 @@ class AnswerSheet(models.Model):
         max_length=2, choices=Languages.choices, default=Languages.ENGLISH
     )
 
-    stack = models.ForeignKey(
-        Stack,
+    collection = models.ForeignKey(
+        Collection,
         blank=True,
         null=True,
+        on_delete=models.SET_NULL,
         help_text=(
-            "Stack of words that limits word selection for question generation"
-            " for an Answersheet instance. If null, default stack is used"
-            " for this particular user and language."
+            "Selection of words that limits question generation for an"
+            " Answersheet instance. If null, all words are considered for this"
+            " particular user and language. Collection also influences which"
+            " Stack is used."
         ),
     )
     regenerate_stack = models.BooleanField(

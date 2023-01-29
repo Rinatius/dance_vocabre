@@ -19,5 +19,5 @@ class Encounter(models.Model):
         help_text="Learner who encountered the Word",
     )
     encounter_type = models.CharField(
-        max_length=2, choices=EncounterType.choices
+        max_length=4, choices=EncounterType.choices
     )

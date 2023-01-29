@@ -1,23 +1,38 @@
 import random
 
-from .wordselector import select_words, select_translation, translate_words
-from ..const import AnswerSheetType, SelectionType
+from .wordselector import translate_words
+from ..const import QuestionType
 
 
-def generate_questions(
-    answersheet_type, learner, test_language, native_language, amount=10
-):
-    if answersheet_type == AnswerSheetType.QUIZ:
-        words = select_words(
-            learner, amount, test_language, SelectionType.UNKNOWN
+def generate_questions(words_pool, answersheet_type, learner, native_language):
+    questions = {"properties": {}}
+    answers = {}
+    uischema = {"ui:order": []}
+
+    words = select_words_for_answersheet(words_pool, learner, answersheet_type)
+    word_translations = translate_words(words, native_language)
+
+    for word in word_translations:
+        key = word["word"]
+        questions["properties"][key], answers[key] = make_question(
+            answersheet_type,
+            word["word"],
+            word["translations"],
+            word_translations,
         )
-        questions, uischema, answers = generate_quiz(words, native_language)
-    else:
-        words = select_words(learner, amount, test_language)
-        questions, uischema, answers = generate_selection_list(
-            words, native_language
-        )
+        uischema["ui:order"].append(key)
+
     return questions, uischema, answers
+
+
+def make_question(question_type, word, translation, all_word_translations):
+    if question_type == QuestionType.SPELL_QUIZ:
+        return make_spell_question(word, translation)
+    elif question_type == QuestionType.MULTI_CHOICE_QUIZ:
+        return make_multichoice_question(word, all_word_translations, 4, False)
+    elif question_type == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+        return make_multichoice_question(word, all_word_translations, 4, True)
+    return make_selection_question(word, translation)
 
 
 def make_spell_question(word, translation):
@@ -26,6 +41,15 @@ def make_spell_question(word, translation):
         "title": ", ".join(translation),
     }
     answer = word
+    return question, answer
+
+
+def make_selection_question(word, translation):
+    question = {
+        "type": "boolean",
+        "title": word,
+    }
+    answer = True
     return question, answer
 
 
@@ -64,36 +88,3 @@ def make_multichoice_question(
     }
     answer = correct_answer
     return question, answer
-
-
-def generate_quiz(words, native_language):
-    questions = {"properties": {}}
-    answers = {}
-    uischema = {"ui:order": []}
-    word_translations = translate_words(words, native_language)
-    for word in word_translations:
-        key = word["word"]
-        # questions["properties"][key], answers[key] = make_spell_question(
-        #     word["word"], word["translations"]
-        # )
-        questions["properties"][key], answers[key] = make_multichoice_question(
-            word["word"], word_translations
-        )
-        uischema["ui:order"].append(key)
-
-    return questions, uischema, answers
-
-
-def generate_selection_list(words, native_language):
-    questions = {"properties": {}}
-    answers = {}
-    uischema = {"ui:order": []}
-    for word in words:
-        questions["properties"][word.word] = {
-            "type": "boolean",
-            "title": word.word,
-        }
-        answers[word.word] = True
-        uischema["ui:order"].append(word.word)
-
-    return questions, uischema, answers
