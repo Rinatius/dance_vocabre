@@ -4,12 +4,12 @@ from .wordselector import translate_words
 from ..const import QuestionType
 
 
-def generate_questions(words_pool, answersheet_type, learner, native_language):
+def make_questions(words, answersheet_type, native_language):
     questions = {"properties": {}}
     answers = {}
     uischema = {"ui:order": []}
 
-    words = select_words_for_answersheet(words_pool, learner, answersheet_type)
+    # words = select_words_for_answersheet(words_pool, learner, answersheet_type)
     word_translations = translate_words(words, native_language)
 
     for word in word_translations:

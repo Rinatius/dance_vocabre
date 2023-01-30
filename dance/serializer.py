@@ -22,9 +22,18 @@ class AnswerSheetCreateSerializer(serializers.ModelSerializer):
             "learner",
             "test_language",
             "native_language",
+            "collection",
+            "regenerate_stack",
+            "stack_size",
             "questions",
             "uischema",
         ]
+
+    def create(self, validated_data):
+        answer_sheet = AnswerSheet(**validated_data)
+        answer_sheet.generate()
+        answer_sheet.save()
+        return answer_sheet
 
 
 class AnswerSheetEditSerializer(serializers.ModelSerializer):

@@ -1,8 +1,8 @@
 from django.db import models
 
-from . import Stack, Collection
+from . import Stack, Collection, Word
 from .learner import Learner
-from ..utils.questiongenerator import generate_questions
+from ..utils.questiongenerator import make_questions
 from ..utils.answergrader import grade
 from ..const import QuestionType, Languages
 
@@ -66,6 +66,7 @@ class AnswerSheet(models.Model):
             " Stack is used."
         ),
     )
+    stack_size = models.IntegerField(blank=True, null=True)
     regenerate_stack = models.BooleanField(
         default=False,
         help_text=(
@@ -83,3 +84,16 @@ class AnswerSheet(models.Model):
 
     def generate_encounters(self):
         pass
+
+    def generate(self):
+        self.type,
+        self.learner,
+        self.test_language,
+        self.native_language,
+        stack_words =
+        if self.regenerate_stack:
+            stack
+        words = Word.objects.all()
+        self.questions, self.uischema, self.answers = make_questions(
+            words, self.type, self.native_language
+        )

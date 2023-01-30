@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import viewsets
 
+from .const import EncounterType, QuestionType
 from .models import Encounter
 from .models.answersheet import AnswerSheet
 from .serializer import (
@@ -8,8 +9,9 @@ from .serializer import (
     AnswerSheetCreateSerializer,
     AnswerSheetEditSerializer,
 )
-from .utils.questiongenerator import generate_questions
+from .utils.questiongenerator import make_questions
 from .utils.answergrader import generate_encounters_and_score
+from .utils.wordselector import select_from_stack, select_words
 
 
 class AnswerSheetViewSet(viewsets.ModelViewSet):
@@ -22,7 +24,19 @@ class AnswerSheetViewSet(viewsets.ModelViewSet):
             return AnswerSheetSerializer
 
     def perform_create(self, serializer):
-        questions, uischema, answers = generate_questions(
+        learner = serializer.validated_data["learner"]
+        collection = serializer.validated_data.get("collection", None)
+        type = serializer.validated_data.get(
+            "type", QuestionType.FAMILIAR_SELECTION
+        )
+
+        if serializer.validated_data.get("regenerate_stack", False):
+            words = select_words(
+                learner, serializer.validated_data["test_language"], collection
+            )
+        else:
+            words = select_from_stack(learner, collection)
+        questions, uischema, answers = make_questions(
             serializer.validated_data["type"],
             serializer.validated_data["learner"],
             serializer.validated_data["test_language"],

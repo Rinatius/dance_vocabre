@@ -65,7 +65,7 @@ class EncounterType(models.TextChoices):
     )
 
 
-class SelectionType(Enum):
+class SelectionType:
     NOT_MARKED = 1
     UNKNOWN = 2
 
