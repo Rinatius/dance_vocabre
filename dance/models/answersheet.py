@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from . import Stack, Collection, Word
 from .learner import Learner
@@ -85,15 +85,26 @@ class AnswerSheet(models.Model):
     def generate_encounters(self):
         pass
 
-    def generate(self):
-        self.type,
-        self.learner,
-        self.test_language,
-        self.native_language,
-        stack_words =
-        if self.regenerate_stack:
-            stack
-        words = Word.objects.all()
+    def generate(self, amount=10):
+        stack, created = Stack.objects.get_or_create(
+            learner=self.learner,
+            language=self.test_language,
+            collection=self.collection,
+        )
+        regenerate_stack = (
+            created
+            or stack.words is None
+            or not stack.words.exists()
+            or self.regenerate_stack
+        )
+        if regenerate_stack:
+            words = stack.select_new_words(amount=amount)
+        else:
+            words = stack.get_words()
         self.questions, self.uischema, self.answers = make_questions(
             words, self.type, self.native_language
         )
+        with transaction.atomic():
+            self.save()
+            if regenerate_stack:
+                stack.regenerate()
