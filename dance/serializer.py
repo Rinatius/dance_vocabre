@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models.answersheet import AnswerSheet
+from .utils.answergrader import generate_encounters_and_score
 
 
 class AnswerSheetSerializer(serializers.ModelSerializer):
@@ -32,7 +33,6 @@ class AnswerSheetCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         answer_sheet = AnswerSheet(**validated_data)
         answer_sheet.generate()
-        answer_sheet.save()
         return answer_sheet
 
 
@@ -44,6 +44,10 @@ class AnswerSheetEditSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     type = serializers.CharField(read_only=True)
     learner = serializers.CharField(read_only=True)
+
+    def update(self, instance, validated_data):
+        instance = validated_data["learner_answers"]
+        instance.process_answers()
 
     class Meta:
         model = AnswerSheet

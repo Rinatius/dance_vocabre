@@ -1,10 +1,17 @@
 from django.db import models, transaction
 
-from . import Stack, Collection, Word
+from . import Stack, Collection, Word, Encounter
 from .learner import Learner
 from ..utils.questiongenerator import make_questions
 from ..utils.answergrader import grade
-from ..const import QuestionType, Languages
+from ..const import (
+    QuestionType,
+    Languages,
+    SelectionType,
+    CORRECT_CHOICE,
+    INCORRECT_CHOICE,
+)
+from ..utils.wordselector import select_words
 
 
 class AnswerSheet(models.Model):
@@ -85,26 +92,97 @@ class AnswerSheet(models.Model):
     def generate_encounters(self):
         pass
 
-    def generate(self, amount=10):
-        stack, created = Stack.objects.get_or_create(
-            learner=self.learner,
-            language=self.test_language,
-            collection=self.collection,
-        )
-        regenerate_stack = (
-            created
-            or stack.words is None
-            or not stack.words.exists()
-            or self.regenerate_stack
-        )
-        if regenerate_stack:
-            words = stack.select_new_words(amount=amount)
+    def generate(self):
+        print("------------LEARNER---------------")
+        print(self.learner)
+        print(self.learner.id)
+        print(self.learner.pk)
+        if self.type != QuestionType.KNOWN_SELECTION:
+            print("----------START GET OR CREATE-------")
+            stack, created = Stack.objects.get_or_create(
+                learner=self.learner,
+                language=self.test_language,
+                collection=self.collection,
+            )
+            print("----------------------STACK----------------")
+            print(stack)
+            regenerate_stack = (
+                created
+                or stack.words is None
+                or not stack.words.exists()
+                or self.regenerate_stack
+            )
+            if regenerate_stack:
+                print("----------------REGENERATE----------------")
+                words = stack.select_new_words(self.stack_size)
+            else:
+                words = stack.get_words()
         else:
-            words = stack.get_words()
+            words = select_words(
+                self.learner,
+                self.stack_size,
+                self.test_language,
+                SelectionType.NOT_MARKED,
+                self.collection,
+            )
+            regenerate_stack = False
+            stack = False
         self.questions, self.uischema, self.answers = make_questions(
             words, self.type, self.native_language
         )
+        print("----------------QUESTIONS----------------")
+        print(self.questions)
+        with transaction.atomic():
+            print("----------------NOT SAVED----------------")
+            self.save()
+            print("----------------SAVED----------------")
+            if regenerate_stack and stack:
+                stack.regenerate()
+            print("----------------TRANSACTION DONE----------------")
+
+    def process_answers(self):
+        points = 0
+        encounters = []
+        correct_words = []
+        incorrect_words = []
+        for answer in self.correct_answers:
+            if answer in self.learner_answers:
+                word = Word.objects.get(word=answer)
+                # TODO: Possibly remove this request by using word id for optimization.
+                correct_answer = self.normalize(self.correct_answers[answer])
+                learner_answer = self.normalize(self.learner_answers[answer])
+                correct = correct_answer == learner_answer
+
+                if correct:
+                    points += 1
+                    if self.type:
+                        encounter_type = self.type + CORRECT_CHOICE
+                    correct_words.append(word)
+                else:
+                    if self.type:
+                        encounter_type = self.type + INCORRECT_CHOICE
+                    incorrect_words.append(word)
+                encounters.append(
+                    Encounter(
+                        word=word,
+                        learner=self.learner,
+                        encounter_type=encounter_type,
+                    )
+                )
+        stack = None
+        if self.type != QuestionType.KNOWN_SELECTION:
+            stack = Stack.objects.get(
+                learner=self.learner,
+                language=self.test_language,
+                collection=self.collection,
+            )
+        self.score = round(points / len(self.correct_answers) * 100)
         with transaction.atomic():
             self.save()
-            if regenerate_stack:
-                stack.regenerate()
+            Encounter.objects.bulk_create(encounters)
+            if stack:
+                stack.excluded_words(correct_words)
+
+    @staticmethod
+    def normalize(answer):
+        return answer

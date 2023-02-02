@@ -1,4 +1,9 @@
-from ..const import QuestionType, EncounterType
+from ..const import (
+    QuestionType,
+    EncounterType,
+    CORRECT_CHOICE,
+    INCORRECT_CHOICE,
+)
 from ..models import Word, Encounter
 
 
@@ -10,18 +15,14 @@ def normalize(answer):
     return answer
 
 
-def generate_known_selection_encounter(learner, correct_answer_key, correct):
-    word = Word.objects.get(word=correct_answer_key)
+def generate_encounter(learner, word_key, correct, question_type):
+    word = Word.objects.get(word=word_key)
     # TODO: Possibly remove this request by using word id for optimization.
+
     encounter_type = (
-        EncounterType.SELECTION_KNOWN
-        if correct
-        else EncounterType.SELECTION_UNKNOWN
+        question_type + CORRECT_CHOICE if correct else INCORRECT_CHOICE
     )
-    encounter = Encounter(
-        word=word, learner=learner, encounter_type=encounter_type
-    )
-    return encounter
+    return Encounter(word=word, learner=learner, encounter_type=encounter_type)
 
 
 def generate_encounter_and_score(
@@ -34,8 +35,11 @@ def generate_encounter_and_score(
         correct = True
     if answersheet.type == QuestionType.KNOWN_SELECTION:
         encounters.append(
-            generate_known_selection_encounter(
-                answersheet.learner, correct_answer_key, correct
+            generate_encounter(
+                answersheet.learner,
+                correct_answer_key,
+                correct,
+                answersheet.type,
             )
         )
     return encounters, 1 if correct else 0

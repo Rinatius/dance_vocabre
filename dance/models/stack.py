@@ -1,7 +1,7 @@
 from django.db import models, transaction
 
 from dance.const import Languages, SelectionType
-from dance.models import Learner, Word, Collection
+from dance.models import Learner
 from dance.utils.wordselector import select_words
 
 
@@ -9,12 +9,18 @@ class Stack(models.Model):
     learner = models.ForeignKey(
         Learner, on_delete=models.CASCADE, related_name="stack"
     )
-    language = models.CharField(max_length=2, choices=Languages)
+    language = models.CharField(max_length=2, choices=Languages.choices)
     collection = models.ForeignKey(
-        Collection, on_delete=models.CASCADE, related_name="stacks"
+        "Collection",
+        on_delete=models.CASCADE,
+        related_name="stacks",
+        blank=True,
+        null=True,
     )
-    words = models.ManyToManyField(Word, blank=True)
-    excluded_words = models.ManyToManyField(Word, blank=True)
+    words = models.ManyToManyField("Word", blank=True, related_name="stacks")
+    excluded_words = models.ManyToManyField(
+        "Word", blank=True, related_name="stacks_excluded"
+    )
 
     class Meta:
         unique_together = ("learner", "language", "collection")
@@ -22,6 +28,7 @@ class Stack(models.Model):
     def select_new_words(
         self, amount=10, selection_type=SelectionType.UNKNOWN
     ):
+        print("----------------NEW WORDS----------------")
         self.new_words = select_words(
             self.learner,
             amount,
@@ -29,6 +36,8 @@ class Stack(models.Model):
             selection_type,
             self.collection,
         )
+        print("----------------NEW WORDS DONE----------------")
+        print(self.new_words)
         return self.new_words
 
     def get_words(self):
@@ -43,14 +52,23 @@ class Stack(models.Model):
         self.excluded_words.clear()
 
     def regenerate(self, amount=10):
+        print("-----------NEW WORDS INSIDE REGENERATE----------------")
+
+        print(self.new_words)
         if self.new_words is None:
             self.select_new_words(amount)
+
         with transaction.atomic():
             self.words.clear()
-            self.words.add(self.new_words)
+            print("-------------WORDS CLEARED--------------")
+            print(list(self.new_words.values_list("id", flat=True)))
+            self.words.add(*list(self.new_words.values_list("id", flat=True)))
+            print("-----------WORDS ADDED----------------")
+
             self.excluded_words.clear()
             self.new_words = None
+        print("-----------REGENERATE DONE----------------")
 
     def __init__(self, *args, **kwargs):
         self.new_words = None
-        super(Stack, self).__init__(*args, *kwargs)
+        super(Stack, self).__init__(*args, **kwargs)

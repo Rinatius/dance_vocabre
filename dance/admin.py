@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Word, Learner, System, Encounter
+from .models import Word, Learner, System, Encounter, Stack
 from .models.answersheet import AnswerSheet
 
 
@@ -13,3 +13,4 @@ admin.site.register(AnswerSheet)
 admin.site.register(Learner)
 admin.site.register(System)
 admin.site.register(Encounter)
+admin.site.register(Stack)
