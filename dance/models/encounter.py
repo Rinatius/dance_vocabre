@@ -21,3 +21,6 @@ class Encounter(models.Model):
     encounter_type = models.CharField(
         max_length=4, choices=EncounterType.choices
     )
+
+    def __str__(self):
+        return f"{self.word} - {self.learner} - {self.encounter_type}"

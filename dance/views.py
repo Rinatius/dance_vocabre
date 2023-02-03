@@ -44,12 +44,12 @@ class AnswerSheetViewSet(viewsets.ModelViewSet):
     #         questions=questions, uischema=uischema, correct_answers=answers
     #     )
 
-    def perform_update(self, serializer):
-        encounters, score = generate_encounters_and_score(
-            self.get_object(), serializer.validated_data["learner_answers"]
-        )
-        with transaction.atomic():
-            serializer.save(score=score)
-            Encounter.objects.bulk_create(encounters)
+    # def perform_update(self, serializer):
+    #     encounters, score = generate_encounters_and_score(
+    #         self.get_object(), serializer.validated_data["learner_answers"]
+    #     )
+    #     with transaction.atomic():
+    #         serializer.save(score=score)
+    #         Encounter.objects.bulk_create(encounters)
 
     queryset = AnswerSheet.objects.all()

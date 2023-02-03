@@ -93,19 +93,12 @@ class AnswerSheet(models.Model):
         pass
 
     def generate(self):
-        print("------------LEARNER---------------")
-        print(self.learner)
-        print(self.learner.id)
-        print(self.learner.pk)
         if self.type != QuestionType.KNOWN_SELECTION:
-            print("----------START GET OR CREATE-------")
             stack, created = Stack.objects.get_or_create(
                 learner=self.learner,
                 language=self.test_language,
                 collection=self.collection,
             )
-            print("----------------------STACK----------------")
-            print(stack)
             regenerate_stack = (
                 created
                 or stack.words is None
@@ -113,7 +106,6 @@ class AnswerSheet(models.Model):
                 or self.regenerate_stack
             )
             if regenerate_stack:
-                print("----------------REGENERATE----------------")
                 words = stack.select_new_words(self.stack_size)
             else:
                 words = stack.get_words()
@@ -127,24 +119,21 @@ class AnswerSheet(models.Model):
             )
             regenerate_stack = False
             stack = False
-        self.questions, self.uischema, self.answers = make_questions(
+        self.questions, self.uischema, self.correct_answers = make_questions(
             words, self.type, self.native_language
         )
-        print("----------------QUESTIONS----------------")
-        print(self.questions)
         with transaction.atomic():
-            print("----------------NOT SAVED----------------")
             self.save()
-            print("----------------SAVED----------------")
             if regenerate_stack and stack:
                 stack.regenerate()
-            print("----------------TRANSACTION DONE----------------")
 
-    def process_answers(self):
+    def process_answers(self, answers=None):
         points = 0
         encounters = []
         correct_words = []
         incorrect_words = []
+        if answers is not None:
+            self.learner_answers = answers
         for answer in self.correct_answers:
             if answer in self.learner_answers:
                 word = Word.objects.get(word=answer)
@@ -157,11 +146,11 @@ class AnswerSheet(models.Model):
                     points += 1
                     if self.type:
                         encounter_type = self.type + CORRECT_CHOICE
-                    correct_words.append(word)
+                    correct_words.append(word.pk)
                 else:
                     if self.type:
                         encounter_type = self.type + INCORRECT_CHOICE
-                    incorrect_words.append(word)
+                    incorrect_words.append(word.pk)
                 encounters.append(
                     Encounter(
                         word=word,
@@ -181,7 +170,7 @@ class AnswerSheet(models.Model):
             self.save()
             Encounter.objects.bulk_create(encounters)
             if stack:
-                stack.excluded_words(correct_words)
+                stack.exclude_words(correct_words)
 
     @staticmethod
     def normalize(answer):

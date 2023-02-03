@@ -46,8 +46,8 @@ class AnswerSheetEditSerializer(serializers.ModelSerializer):
     learner = serializers.CharField(read_only=True)
 
     def update(self, instance, validated_data):
-        instance = validated_data["learner_answers"]
-        instance.process_answers()
+        instance.process_answers(validated_data["learner_answers"])
+        return instance
 
     class Meta:
         model = AnswerSheet
