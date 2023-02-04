@@ -10,9 +10,12 @@ def convert(
     translations_included=False,
     primary_language=Languages.ENGLISH,
 ):
-    vocab_list = list(csv.reader(vocab_string.splitlines()))
+    vocab_list = list(csv.reader(vocab_string))
     if skip_first_line:
-        vocab_list.pop(0)
+        poped = vocab_list.pop(0)
+        print(poped)
+
+    print(vocab_list[0])
 
     for word in vocab_list:
         new_word, created = Word.objects.get_or_create(

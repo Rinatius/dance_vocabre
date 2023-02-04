@@ -1,4 +1,4 @@
-test_vocab = """
+TEST_VOCAB = """
 word, language, order
 car, EN, 1
 машина, RU, 2
