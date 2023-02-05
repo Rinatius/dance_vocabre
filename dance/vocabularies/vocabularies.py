@@ -1,38 +1,36 @@
-TEST_VOCAB = """
-word, language, order
-car, EN, 1
-машина, RU, 2
-автомобиль, RU, 20
-house, EN, 2
-дом, RU, 1
-go, EN, 3
-идти, RU, 3
-ехать, RU, 5
-people, EN, 4
-люди, RU, 8
-народ, RU, 10
-human, EN, 5
-человек, RU, 11
-rain, EN, 6
-дождь, RU, 30
-road, EN, 7
-дорога, RU, 25
-sun, EN, 8
-солнце, RU, 26
-snow, EN, 9
-снег, RU, 27
-wind, EN, 10
-ветер, RU, 28
-run, EN, 11
-бежать, RU, 29
-бег, RU, 31
-fly, EN, 12
-лететь, RU, 32
-муха, RU, 33
-song, EN, 13
-песня, RU, 34
-table, EN, 14
-стол, RU, 35
-wall, EN, 15
-стена, RU, 36
-"""
+TEST_VOCAB = """word,language,order
+car,EN,1
+машина,RU,2
+автомобиль,RU,20
+house,EN,2
+дом,RU,1
+go,EN,3
+идти,RU,3
+ехать,RU,5
+people,EN,4
+люди,RU,8
+народ,RU,10
+human,EN,5
+человек,RU,11
+rain,EN,6
+дождь,RU,30
+road,EN,7
+дорога,RU,25
+sun,EN,8
+солнце,RU,26
+snow,EN,9
+снег,RU,27
+wind,EN,10
+ветер,RU,28
+run,EN,11
+бежать,RU,29
+бег,RU,31
+fly,EN,12
+лететь,RU,32
+муха,RU,33
+song,EN,13
+песня,RU,34
+table,EN,14
+стол,RU,35
+wall,EN,15
+стена,RU,36"""
