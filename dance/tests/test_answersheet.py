@@ -20,32 +20,36 @@ class AnswerSheetTest(APITestCase):
         self.learner = Learner.objects.create(
             external_id=1, system=self.system
         )
+        self.client = APIClient()
 
-    def test_creation(self):
-        client = APIClient()
+    def create_answersheet(self, question_type):
         data = {
-            "type": QuestionType.KNOWN_SELECTION,
+            "type": question_type,
             "learner": self.learner.pk,
             "test_language": Languages.ENGLISH,
             "native_language": Languages.RUSSIAN,
             "regenerate_stack": False,
             "stack_size": 10,
         }
-        response = client.post(reverse("answersheet-list"), data=data)
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_201_CREATED,
-            (
-                "Wrong response code, expected:"
-                f" {status.HTTP_201_CREATED}, received:"
-                f" {response.status_code} "
-            ),
-        )
-        self.assertEqual(
-            AnswerSheet.objects.count(),
-            1,
-            (
-                f"{AnswerSheet.objects.count()} answersheets created instead"
-                " of 1."
-            ),
-        )
+        return self.client.post(reverse("answersheet-list"), data=data)
+
+    def test_creation(self):
+        for question_type in QuestionType.choices:
+            response = self.create_answersheet(question_type[0])
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_201_CREATED,
+                (
+                    f"Wrong response code, for {question_type[1]} question"
+                    f" type, expected: {status.HTTP_201_CREATED}, received:"
+                    f" {response.status_code} "
+                ),
+            )
+            self.assertEqual(
+                AnswerSheet.objects.count(),
+                1,
+                (
+                    f"{AnswerSheet.objects.count()} answersheets created"
+                    " instead of 1 for {question_type[1]} question type."
+                ),
+            )
