@@ -33,9 +33,78 @@ class AnswerSheetTest(APITestCase):
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
+    def check_content(self, content, response):
+        saved_answersheet = AnswerSheet.objects.get(pk=response.data["id"])
+
+        reference_questions = content["questions"]["properties"]
+        response_questions = response.data["questions"]["properties"]
+        saved_questions = saved_answersheet.questions["properties"]
+
+        self.assertEqual(
+            reference_questions,
+            response_questions,
+            (
+                "Generated questions in response do not match reference ones. "
+                f"Questions in response: {response_questions}\n"
+                f"Reference questions: {reference_questions}"
+            ),
+        )
+
+        self.assertEqual(
+            reference_questions,
+            saved_questions,
+            (
+                "Generated questions saved in db do not match reference ones. "
+                f"Questions saved in db: {saved_questions}\n"
+                f"Reference questions: {reference_questions}"
+            ),
+        )
+
+        reference_uischema = content["uischema"]
+        response_uischema = response.data["uischema"]
+        saved_uischema = saved_answersheet.uischema
+
+        self.assertEqual(
+            reference_uischema,
+            response_uischema,
+            (
+                "Generated uischema in response do not match reference one. "
+                f"Uischema in response: {response_uischema}\n"
+                f"Reference uischema: {reference_uischema}"
+            ),
+        )
+
+        self.assertEqual(
+            reference_questions,
+            saved_questions,
+            (
+                "Generated uischema saved in db do not match reference one."
+                f"Uischema saved in db: {saved_uischema}\n"
+                f"Reference uischema: {reference_uischema}"
+            ),
+        )
+
+        reference_correct_answers = content["correct_answers"]
+        saved_correct_answers = saved_answersheet.correct_answers
+
+        self.assertEqual(
+            reference_correct_answers,
+            saved_correct_answers,
+            (
+                "Generated correct answers saved in db do not match reference"
+                " ones.\nCorrect answers in db:"
+                f" {response_uischema}\nReference correct"
+                f" answers:{reference_uischema}"
+            ),
+        )
+
     def test_creation(self):
-        for question_type in QuestionType.choices:
+        for i, question_type in enumerate(QuestionType.choices):
             response = self.create_answersheet(question_type[0])
+            sheets_count = AnswerSheet.objects.filter(
+                type=question_type[0]
+            ).count()
+            sheets_total_count = AnswerSheet.objects.count()
             self.assertEqual(
                 response.status_code,
                 status.HTTP_201_CREATED,
@@ -45,11 +114,69 @@ class AnswerSheetTest(APITestCase):
                     f" {response.status_code} "
                 ),
             )
+
             self.assertEqual(
-                AnswerSheet.objects.count(),
+                sheets_count,
                 1,
                 (
-                    f"{AnswerSheet.objects.count()} answersheets created"
-                    " instead of 1 for {question_type[1]} question type."
+                    f"{sheets_count} answersheets created instead of 1 for"
+                    f" {question_type[1]} question type."
                 ),
             )
+
+            self.assertEqual(
+                sheets_total_count,
+                i + 1,
+                (
+                    f"{sheets_total_count} answersheets created instead of"
+                    f" {i+1} for {question_type[1]} question type."
+                ),
+            )
+
+    def test_contents_selection_known(self):
+        response = self.create_answersheet(QuestionType.KNOWN_SELECTION)
+
+        content = {
+            "questions": {
+                "properties": {
+                    "go": {"type": "boolean", "title": "go"},
+                    "car": {"type": "boolean", "title": "car"},
+                    "sun": {"type": "boolean", "title": "sun"},
+                    "rain": {"type": "boolean", "title": "rain"},
+                    "road": {"type": "boolean", "title": "road"},
+                    "snow": {"type": "boolean", "title": "snow"},
+                    "wind": {"type": "boolean", "title": "wind"},
+                    "house": {"type": "boolean", "title": "house"},
+                    "human": {"type": "boolean", "title": "human"},
+                    "people": {"type": "boolean", "title": "people"},
+                }
+            },
+            "uischema": {
+                "ui:order": [
+                    "car",
+                    "house",
+                    "go",
+                    "people",
+                    "human",
+                    "rain",
+                    "road",
+                    "sun",
+                    "snow",
+                    "wind",
+                ]
+            },
+            "correct_answers": {
+                "go": True,
+                "car": True,
+                "sun": True,
+                "rain": True,
+                "road": True,
+                "snow": True,
+                "wind": True,
+                "house": True,
+                "human": True,
+                "people": True,
+            },
+        }
+
+        self.check_content(content, response)
