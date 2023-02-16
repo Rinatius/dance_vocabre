@@ -254,3 +254,49 @@ class AnswerSheetTest(APITestCase):
         }
 
         self.check_content(QuestionType.FAMILIAR_SELECTION, content)
+
+    def test_content_spelling(self):
+        content = {
+            "questions": {
+                "properties": {
+                    "car": {"type": "string", "title": "машина, автомобиль"},
+                    "house": {"type": "string", "title": "дом"},
+                    "go": {"type": "string", "title": "идти, ехать"},
+                    "people": {"type": "string", "title": "люди, народ"},
+                    "human": {"type": "string", "title": "человек"},
+                    "rain": {"type": "string", "title": "дождь"},
+                    "road": {"type": "string", "title": "дорога"},
+                    "sun": {"type": "string", "title": "солнце"},
+                    "snow": {"type": "string", "title": "снег"},
+                    "wind": {"type": "string", "title": "ветер"},
+                }
+            },
+            "correct_answers": {
+                "go": "go",
+                "car": "car",
+                "sun": "sun",
+                "rain": "rain",
+                "road": "road",
+                "snow": "snow",
+                "wind": "wind",
+                "house": "house",
+                "human": "human",
+                "people": "people",
+            },
+            "uischema": {
+                "ui:order": [
+                    "car",
+                    "house",
+                    "go",
+                    "people",
+                    "human",
+                    "rain",
+                    "road",
+                    "sun",
+                    "snow",
+                    "wind",
+                ]
+            },
+        }
+
+        self.check_content(QuestionType.SPELL_QUIZ, content)
