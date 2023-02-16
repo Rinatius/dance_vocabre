@@ -2,8 +2,13 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase, APIClient
 
-from dance.const import Languages, QuestionType
-from dance.models import Learner, System, AnswerSheet
+from dance.const import (
+    Languages,
+    QuestionType,
+    EncounterType,
+    INCORRECT_CHOICE,
+)
+from dance.models import Learner, System, AnswerSheet, Encounter, Word
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
 
@@ -33,7 +38,7 @@ class AnswerSheetTest(APITestCase):
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
-    def check_content(self, content, response):
+    def compare_content(self, content, response):
         saved_answersheet = AnswerSheet.objects.get(pk=response.data["id"])
 
         reference_questions = content["questions"]["properties"]
@@ -97,6 +102,29 @@ class AnswerSheetTest(APITestCase):
                 f" answers:{reference_uischema}"
             ),
         )
+
+    def check_contents_no_encounters(self, response):
+        content = {
+            "questions": {"properties": {}},
+            "uischema": {"ui:order": []},
+            "correct_answers": {},
+        }
+
+        self.compare_content(content, response)
+
+    def check_content(self, question_type, content):
+        response = self.create_answersheet(question_type)
+
+        self.check_contents_no_encounters(response)
+
+        for word in content["uischema"]["ui:order"]:
+            Encounter(
+                learner=self.learner,
+                encounter_type=EncounterType.SELECTION_UNKNOWN,
+                word=Word.objects.get(word=word),
+            ).save()
+        response = self.create_answersheet(question_type)
+        self.compare_content(content, response)
 
     def test_creation(self):
         for i, question_type in enumerate(QuestionType.choices):
@@ -179,15 +207,50 @@ class AnswerSheetTest(APITestCase):
             },
         }
 
-        self.check_content(content, response)
+        self.compare_content(content, response)
 
-    def test_contents_selection_familiar(self):
-        response = self.create_answersheet(QuestionType.FAMILIAR_SELECTION)
-
+    def test_content_selection_familiar(self):
         content = {
-            "questions": {"properties": {}},
-            "uischema": {"ui:order": []},
-            "correct_answers": {},
+            "questions": {
+                "properties": {
+                    "go": {"type": "boolean", "title": "go"},
+                    "car": {"type": "boolean", "title": "car"},
+                    "sun": {"type": "boolean", "title": "sun"},
+                    "rain": {"type": "boolean", "title": "rain"},
+                    "road": {"type": "boolean", "title": "road"},
+                    "snow": {"type": "boolean", "title": "snow"},
+                    "wind": {"type": "boolean", "title": "wind"},
+                    "house": {"type": "boolean", "title": "house"},
+                    "human": {"type": "boolean", "title": "human"},
+                    "people": {"type": "boolean", "title": "people"},
+                }
+            },
+            "uischema": {
+                "ui:order": [
+                    "car",
+                    "house",
+                    "go",
+                    "people",
+                    "human",
+                    "rain",
+                    "road",
+                    "sun",
+                    "snow",
+                    "wind",
+                ]
+            },
+            "correct_answers": {
+                "go": True,
+                "car": True,
+                "sun": True,
+                "rain": True,
+                "road": True,
+                "snow": True,
+                "wind": True,
+                "house": True,
+                "human": True,
+                "people": True,
+            },
         }
 
-        self.check_content(content, response)
+        self.check_content(QuestionType.FAMILIAR_SELECTION, content)
