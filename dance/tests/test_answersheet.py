@@ -7,6 +7,7 @@ from dance.const import (
     QuestionType,
     EncounterType,
     INCORRECT_CHOICE,
+    CORRECT_CHOICE,
 )
 from dance.models import Learner, System, AnswerSheet, Encounter, Word
 from dance.utils.csv_to_words_converter import save_words_to_db
@@ -300,3 +301,88 @@ class AnswerSheetTest(APITestCase):
         }
 
         self.check_content(QuestionType.SPELL_QUIZ, content)
+
+    def check_answersheet_answering(
+        self,
+        answersheet_id,
+        correct_answer_key="go",
+        incorrect_answer_key="car",
+        correct_answer=True,
+        incorrect_answer=False,
+    ):
+        data = {"learner_answers": {}}
+        data["learner_answers"][correct_answer_key] = correct_answer
+        data["learner_answers"][incorrect_answer_key] = incorrect_answer
+        answers_update_url = reverse(
+            "answersheet-detail", kwargs={"pk": answersheet_id}
+        )
+
+        response = self.client.patch(answers_update_url, data, format="json")
+        question_type = response.data["type"]
+
+        encounter_correct_count = Encounter.objects.filter(
+            word__word=correct_answer_key,
+            encounter_type=(question_type + CORRECT_CHOICE),
+        ).count()
+        encounter_incorrect_count = Encounter.objects.filter(
+            word__word=correct_answer_key,
+            encounter_type=(question_type + INCORRECT_CHOICE),
+        ).count()
+
+        print(f"------------RESPONSE DATA {response.data} ------------------")
+        self.assertEqual(
+            response.data["score"],
+            10,
+            (
+                f"Answersheet score calculated incorrectly for {question_type}"
+                " type answersheet."
+            ),
+        )
+        self.assertEqual(
+            encounter_correct_count,
+            1,
+            (
+                "Incorrect number of encounters for correct answer to"
+                f" {question_type} type question created."
+            ),
+        )
+        self.assertEqual(
+            encounter_incorrect_count,
+            1,
+            (
+                "Incorrect number of encounters for incorrect answer to"
+                f" {question_type} type question created."
+            ),
+        )
+
+    def test_answersheet_answering(self):
+        for i, question_type in enumerate(QuestionType.choices):
+            response = self.create_answersheet(question_type[0])
+
+            correct_answer_key = "go"
+            incorrect_answer_key = "car"
+            correct_answer = True
+            incorrect_answer = False
+
+            if (
+                question_type[0] == QuestionType.SPELL_QUIZ
+                or question_type[0] == QuestionType.MULTI_CHOICE_QUIZ
+            ):
+                correct_answer = "go"
+                incorrect_answer = "carrrr"
+            elif question_type[0] == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+                correct_answer = "идти, ехать"
+                incorrect_answer = "мшина"
+
+            self.check_answersheet_answering(
+                response.data["id"],
+                correct_answer_key,
+                incorrect_answer_key,
+                correct_answer,
+                incorrect_answer,
+            )
+        self.assertEqual(
+            Encounter.objects.count(),
+            len(QuestionType.choices) * 2,
+            "Incorrect number of encounters created.",
+        )
