@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
     # Requirements
     'rest_framework'
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -76,6 +77,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'dance_vocabre.wsgi.application'
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
