@@ -2,10 +2,11 @@ from django.db import models, transaction
 
 from dance.const import Languages, SelectionType
 from dance.models import Learner
+from dance.models.base import BaseDatesModel
 from dance.utils.wordselector import select_words
 
 
-class Stack(models.Model):
+class Stack(BaseDatesModel):
     learner = models.ForeignKey(
         Learner, on_delete=models.CASCADE, related_name="stack"
     )

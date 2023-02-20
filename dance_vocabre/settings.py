@@ -26,18 +26,23 @@ SECRET_KEY = 'django-insecure-n-b4bzyb%+p=m1t#f)t2#=&@su3)3m=i*=p18aeu7y%@0x(285
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+AUTH_USER_MODEL = "dance.User"
 
 # Application definition
 
 INSTALLED_APPS = [
+    # Apps
     'dance.apps.DanceConfig',
+
+    # Base
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Requirements
     'rest_framework'
 ]
 
@@ -76,6 +81,11 @@ WSGI_APPLICATION = 'dance_vocabre.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': 'db.sqlite3'
+    # }
+
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "postgres",

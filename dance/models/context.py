@@ -1,7 +1,9 @@
 from django.db import models
 
+from dance.models.base import BaseDatesModel
 
-class ConText(models.Model):
+
+class ConText(BaseDatesModel):
     text = models.TextField(
             help_text="Text for the context"
             )

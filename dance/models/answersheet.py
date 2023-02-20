@@ -1,6 +1,7 @@
 from django.db import models, transaction
 
 from . import Stack, Collection, Word, Encounter
+from .base import BaseDatesModel
 from .learner import Learner
 from ..utils.questiongenerator import make_questions
 from ..utils.answergrader import grade
@@ -14,7 +15,7 @@ from ..const import (
 from ..utils.wordselector import select_words
 
 
-class AnswerSheet(models.Model):
+class AnswerSheet(BaseDatesModel):
 
     type = models.CharField(max_length=2, choices=QuestionType.choices)
 

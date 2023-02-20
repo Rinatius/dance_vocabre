@@ -1,9 +1,10 @@
 from django.db import models
 
+from .base import BaseDatesModel
 from ..const import Languages
 
 
-class Word(models.Model):
+class Word(BaseDatesModel):
     word = models.CharField(max_length=200)
     order = models.IntegerField()
     translations = models.ManyToManyField(
