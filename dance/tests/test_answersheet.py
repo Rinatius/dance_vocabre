@@ -8,13 +8,21 @@ from dance.const import (
     EncounterType,
     INCORRECT_CHOICE,
 )
-from dance.models import Learner, System, AnswerSheet, Encounter, Word
+from dance.models import Learner, System, AnswerSheet, Encounter, Word, User
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
 
 
 class AnswerSheetTest(APITestCase):
     def setUp(self) -> None:
+        self.user = User.objects.create(
+            username="test",
+            email="test@email.com",
+            password="test"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
         lines = TEST_VOCAB.splitlines()
         save_words_to_db(
             lines,
@@ -25,7 +33,6 @@ class AnswerSheetTest(APITestCase):
         self.learner = Learner.objects.create(
             external_id=1, system=self.system
         )
-        self.client = APIClient()
 
     def create_answersheet(self, question_type):
         data = {
