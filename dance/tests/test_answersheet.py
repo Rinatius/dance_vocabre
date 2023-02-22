@@ -28,14 +28,16 @@ class AnswerSheetTest(APITestCase):
         )
         self.client = APIClient()
 
-    def create_answersheet(self, question_type):
+    def create_answersheet(
+        self, question_type, stack_size=10, regenerate_stack=False
+    ):
         data = {
             "type": question_type,
             "learner": self.learner.pk,
             "test_language": Languages.ENGLISH,
             "native_language": Languages.RUSSIAN,
-            "regenerate_stack": False,
-            "stack_size": 10,
+            "regenerate_stack": regenerate_stack,
+            "stack_size": stack_size,
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
@@ -302,6 +304,35 @@ class AnswerSheetTest(APITestCase):
 
         self.check_content(QuestionType.SPELL_QUIZ, content)
 
+    def check_encounters_number(
+        self, word_key, question_type, correct_count=1, incorrect_count=1
+    ):
+        encounter_correct_count = Encounter.objects.filter(
+            word__word=word_key,
+            encounter_type=(question_type + CORRECT_CHOICE),
+        ).count()
+        encounter_incorrect_count = Encounter.objects.filter(
+            word__word=word_key,
+            encounter_type=(question_type + INCORRECT_CHOICE),
+        ).count()
+
+        self.assertEqual(
+            encounter_correct_count,
+            correct_count,
+            (
+                "Incorrect number of encounters for correct answer to"
+                f" {QuestionType} type question created."
+            ),
+        )
+        self.assertEqual(
+            encounter_incorrect_count,
+            incorrect_count,
+            (
+                "Incorrect number of encounters for incorrect answer to"
+                f" {question_type} type question created."
+            ),
+        )
+
     def check_answersheet_answering(
         self,
         answersheet_id,
@@ -320,14 +351,18 @@ class AnswerSheetTest(APITestCase):
         response = self.client.patch(answers_update_url, data, format="json")
         question_type = response.data["type"]
 
-        encounter_correct_count = Encounter.objects.filter(
-            word__word=correct_answer_key,
-            encounter_type=(question_type + CORRECT_CHOICE),
-        ).count()
-        encounter_incorrect_count = Encounter.objects.filter(
-            word__word=correct_answer_key,
-            encounter_type=(question_type + INCORRECT_CHOICE),
-        ).count()
+        self.check_encounters_number(
+            question_type=question_type,
+            word_key=correct_answer_key,
+            correct_count=1,
+            incorrect_count=0,
+        )
+        self.check_encounters_number(
+            question_type=question_type,
+            word_key=incorrect_answer_key,
+            correct_count=0,
+            incorrect_count=1,
+        )
 
         print(f"------------RESPONSE DATA {response.data} ------------------")
         self.assertEqual(
@@ -338,27 +373,47 @@ class AnswerSheetTest(APITestCase):
                 " type answersheet."
             ),
         )
-        self.assertEqual(
-            encounter_correct_count,
-            1,
-            (
-                "Incorrect number of encounters for correct answer to"
-                f" {question_type} type question created."
-            ),
-        )
-        self.assertEqual(
-            encounter_incorrect_count,
-            1,
-            (
-                "Incorrect number of encounters for incorrect answer to"
-                f" {question_type} type question created."
-            ),
-        )
 
-    def test_answersheet_answering(self):
-        for i, question_type in enumerate(QuestionType.choices):
-            response = self.create_answersheet(question_type[0])
+    def mark_as_unknown(self, words_count=10):
+        response = self.create_answersheet(
+            QuestionType.KNOWN_SELECTION, stack_size=words_count
+        )
+        answersheet_id = response.data["id"]
+        answersheet = AnswerSheet.objects.get(pk=answersheet_id)
+        answers = {}
+        for word in answersheet.correct_answers:
+            answers[word] = not answersheet.correct_answers[word]
 
+        data = {"learner_answers": answers}
+        answers_update_url = reverse(
+            "answersheet-detail", kwargs={"pk": answersheet_id}
+        )
+        return self.client.patch(answers_update_url, data, format="json")
+
+    def test_mark_as_unknown(self):
+        response = self.mark_as_unknown(10)
+        for word in response.data["uischema"]["ui:order"]:
+            self.check_encounters_number(
+                word_key=word,
+                question_type=QuestionType.KNOWN_SELECTION,
+                correct_count=0,
+                incorrect_count=1,
+            )
+
+    def _test_answersheet_answering(self):
+        self.mark_as_unknown(10)
+        question_types = [
+            QuestionType.FAMILIAR_SELECTION,
+            QuestionType.MULTI_CHOICE_QUIZ,
+            QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ,
+            QuestionType.SPELL_QUIZ,
+        ]
+
+        for question_type in question_types:
+            response = self.create_answersheet(
+                question_type, regenerate_stack=True
+            )
+            print(f"-----------NEW ANSWERSHEET {response.data} -----------")
             correct_answer_key = "go"
             incorrect_answer_key = "car"
             correct_answer = True

@@ -16,7 +16,7 @@ class AnswerSheetViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return AnswerSheetCreateSerializer
-        elif self.action == "update":
+        elif self.action == "update" or self.action == "partial_update":
             return AnswerSheetEditSerializer
         else:
             return AnswerSheetSerializer
