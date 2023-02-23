@@ -457,6 +457,64 @@ class AnswerSheetTest(APITestCase):
                 correct_answer,
                 incorrect_answer,
             )
+            answersheet_without_regenerate = self.create_answersheet(
+                question_type, regenerate_stack=False
+            )
+            self.assertNotIn(
+                correct_answer_key,
+                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered correctly is included into"
+                    " answersheet without stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+            self.assertIn(
+                incorrect_answer_key,
+                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered incorrectly is not included"
+                    " into answersheet without stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+            answersheet_with_regenerate = self.create_answersheet(
+                question_type, regenerate_stack=True
+            )
+            if question_type == QuestionType.SPELL_QUIZ:
+                self.assertNotIn(
+                    correct_answer_key,
+                    answersheet_without_regenerate.data["uischema"][
+                        "ui:order"
+                    ],
+                    (
+                        "Question that was answered correctly is included"
+                        " into answersheet with stack regeneration for"
+                        f" {question_type} question type"
+                    ),
+                )
+            else:
+                self.assertIn(
+                    correct_answer_key,
+                    answersheet_without_regenerate.data["uischema"][
+                        "ui:order"
+                    ],
+                    (
+                        "Question that was answered correctly is NOT included"
+                        " into answersheet with stack regeneration for"
+                        f" {question_type} question type"
+                    ),
+                )
+            self.assertIn(
+                incorrect_answer_key,
+                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered incorrectly is not"
+                    " included into answersheet with stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+
         self.assertEqual(
             Encounter.objects.count(),
             len(QuestionType.choices) * 2
