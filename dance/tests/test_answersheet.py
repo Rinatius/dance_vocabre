@@ -364,7 +364,6 @@ class AnswerSheetTest(APITestCase):
             incorrect_count=1,
         )
 
-        print(f"------------RESPONSE DATA {response.data} ------------------")
         self.assertEqual(
             response.data["score"],
             10,
@@ -400,8 +399,9 @@ class AnswerSheetTest(APITestCase):
                 incorrect_count=1,
             )
 
-    def _test_answersheet_answering(self):
-        self.mark_as_unknown(10)
+    def test_answersheet_answering(self):
+        unknown_number = 10
+        self.mark_as_unknown(unknown_number)
         question_types = [
             QuestionType.FAMILIAR_SELECTION,
             QuestionType.MULTI_CHOICE_QUIZ,
@@ -413,19 +413,19 @@ class AnswerSheetTest(APITestCase):
             response = self.create_answersheet(
                 question_type, regenerate_stack=True
             )
-            print(f"-----------NEW ANSWERSHEET {response.data} -----------")
+
             correct_answer_key = "go"
             incorrect_answer_key = "car"
             correct_answer = True
             incorrect_answer = False
 
             if (
-                question_type[0] == QuestionType.SPELL_QUIZ
-                or question_type[0] == QuestionType.MULTI_CHOICE_QUIZ
+                question_type == QuestionType.SPELL_QUIZ
+                or question_type == QuestionType.MULTI_CHOICE_QUIZ
             ):
                 correct_answer = "go"
                 incorrect_answer = "carrrr"
-            elif question_type[0] == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+            elif question_type == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
                 correct_answer = "идти, ехать"
                 incorrect_answer = "мшина"
 
@@ -438,6 +438,12 @@ class AnswerSheetTest(APITestCase):
             )
         self.assertEqual(
             Encounter.objects.count(),
-            len(QuestionType.choices) * 2,
+            len(QuestionType.choices) * 2
+            + unknown_number
+            - 2,  # One correct and one incorrect encounter for all
+            # question types (this test will fail if new question type
+            # is added but not tested) excluding Known Selection type plus
+            # all incorrect known selection encounters that were created
+            # previously
             "Incorrect number of encounters created.",
         )
