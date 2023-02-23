@@ -484,9 +484,7 @@ class AnswerSheetTest(APITestCase):
             if question_type == QuestionType.SPELL_QUIZ:
                 self.assertNotIn(
                     correct_answer_key,
-                    answersheet_without_regenerate.data["uischema"][
-                        "ui:order"
-                    ],
+                    answersheet_with_regenerate.data["uischema"]["ui:order"],
                     (
                         "Question that was answered correctly is included"
                         " into answersheet with stack regeneration for"
@@ -496,9 +494,7 @@ class AnswerSheetTest(APITestCase):
             else:
                 self.assertIn(
                     correct_answer_key,
-                    answersheet_without_regenerate.data["uischema"][
-                        "ui:order"
-                    ],
+                    answersheet_with_regenerate.data["uischema"]["ui:order"],
                     (
                         "Question that was answered correctly is NOT included"
                         " into answersheet with stack regeneration for"
@@ -507,7 +503,7 @@ class AnswerSheetTest(APITestCase):
                 )
             self.assertIn(
                 incorrect_answer_key,
-                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                answersheet_with_regenerate.data["uischema"]["ui:order"],
                 (
                     "Question that was answered incorrectly is not"
                     " included into answersheet with stack regeneration for"
