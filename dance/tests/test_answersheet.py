@@ -373,21 +373,30 @@ class AnswerSheetTest(APITestCase):
             ),
         )
 
-    def mark_as_unknown(self, words_count=10):
+    def mark_as(self, known=False, words_count=10):
         response = self.create_answersheet(
-            QuestionType.KNOWN_SELECTION, stack_size=words_count
+            QuestionType.KNOWN_SELECTION,
+            stack_size=words_count,
+            regenerate_stack=True,
         )
         answersheet_id = response.data["id"]
         answersheet = AnswerSheet.objects.get(pk=answersheet_id)
-        answers = {}
-        for word in answersheet.correct_answers:
-            answers[word] = not answersheet.correct_answers[word]
+        answers = answersheet.correct_answers
+        if not known:
+            for word in answersheet.correct_answers:
+                answers[word] = not answersheet.correct_answers[word]
 
         data = {"learner_answers": answers}
         answers_update_url = reverse(
             "answersheet-detail", kwargs={"pk": answersheet_id}
         )
         return self.client.patch(answers_update_url, data, format="json")
+
+    def mark_as_unknown(self, words_count=10):
+        return self.mark_as(known=False, words_count=words_count)
+
+    def mark_as_known(self, words_count=10):
+        return self.mark_as(known=True, words_count=words_count)
 
     def test_mark_as_unknown(self):
         response = self.mark_as_unknown(10)
@@ -398,6 +407,18 @@ class AnswerSheetTest(APITestCase):
                 correct_count=0,
                 incorrect_count=1,
             )
+        self.assertEqual(response.data["score"], 0)
+
+    def test_mark_as_known(self):
+        response = self.mark_as_known(10)
+        for word in response.data["uischema"]["ui:order"]:
+            self.check_encounters_number(
+                word_key=word,
+                question_type=QuestionType.KNOWN_SELECTION,
+                correct_count=1,
+                incorrect_count=0,
+            )
+        self.assertEqual(response.data["score"], 100)
 
     def test_answersheet_answering(self):
         unknown_number = 10
