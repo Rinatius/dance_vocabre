@@ -87,8 +87,17 @@ class AnswerSheet(models.Model):
         blank=True,
         help_text=(
             "Flag indicating that Stack Answersheet is using to make questions"
-            " should clear its Excluded field. It lead to Answersheet using"
+            " should clear its Excluded field. It leads to Answersheet using"
             " all Words from Stack."
+        ),
+    )
+    review = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text=(
+            "Flag indicating that generated Answersheet will be used for"
+            " review and correctly answered questions will not be excluded"
+            " from Stack."
         ),
     )
 
@@ -184,7 +193,7 @@ class AnswerSheet(models.Model):
         with transaction.atomic():
             self.save()
             Encounter.objects.bulk_create(encounters)
-            if stack:
+            if stack and not self.review:
                 stack.exclude_words(correct_words)
 
     @staticmethod

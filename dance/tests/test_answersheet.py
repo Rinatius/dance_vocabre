@@ -34,6 +34,7 @@ class AnswerSheetTest(APITestCase):
         stack_size=10,
         regenerate_stack=False,
         clear_excluded=False,
+        review=False,
     ):
         data = {
             "type": question_type,
@@ -43,6 +44,7 @@ class AnswerSheetTest(APITestCase):
             "regenerate_stack": regenerate_stack,
             "stack_size": stack_size,
             "clear_excluded": clear_excluded,
+            "review": review,
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
@@ -541,3 +543,54 @@ class AnswerSheetTest(APITestCase):
             # previously
             "Incorrect number of encounters created.",
         )
+
+    def test_answersheet_answering_review(self):
+        unknown_number = 10
+        self.mark_as_unknown(unknown_number)
+        question_types = [
+            QuestionType.FAMILIAR_SELECTION,
+            QuestionType.MULTI_CHOICE_QUIZ,
+            QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ,
+            QuestionType.SPELL_QUIZ,
+        ]
+
+        for question_type in question_types:
+            response = self.create_answersheet(
+                question_type, regenerate_stack=True, review=True
+            )
+
+            correct_answer_key = "go"
+            incorrect_answer_key = "car"
+            correct_answer = True
+            incorrect_answer = False
+
+            if (
+                question_type == QuestionType.SPELL_QUIZ
+                or question_type == QuestionType.MULTI_CHOICE_QUIZ
+            ):
+                correct_answer = "go"
+                incorrect_answer = "carrrr"
+            elif question_type == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+                correct_answer = "идти, ехать"
+                incorrect_answer = "мшина"
+
+            self.check_answersheet_answering(
+                response.data["id"],
+                correct_answer_key,
+                incorrect_answer_key,
+                correct_answer,
+                incorrect_answer,
+            )
+            answersheet_with_review = self.create_answersheet(
+                question_type, regenerate_stack=False
+            )
+
+            self.assertEqual(
+                set(answersheet_with_review.data["uischema"]["ui:order"]),
+                set(response.data["uischema"]["ui:order"]),
+                (
+                    "Original answersheet with review enabled and the one"
+                    " created afterwards do not match for"
+                    f" {question_type} question type"
+                ),
+            )

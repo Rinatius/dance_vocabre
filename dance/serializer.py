@@ -26,6 +26,7 @@ class AnswerSheetCreateSerializer(serializers.ModelSerializer):
             "collection",
             "regenerate_stack",
             "clear_excluded",
+            "review",
             "stack_size",
             "questions",
             "uischema",
