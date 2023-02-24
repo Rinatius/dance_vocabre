@@ -76,9 +76,19 @@ class AnswerSheet(models.Model):
     stack_size = models.IntegerField(blank=True, null=True)
     regenerate_stack = models.BooleanField(
         default=False,
+        blank=True,
         help_text=(
-            "Flag indicating that Stack Answrsheet is using to make questions"
+            "Flag indicating that Stack Answersheet is using to make questions"
             " should be regenerated"
+        ),
+    )
+    clear_excluded = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text=(
+            "Flag indicating that Stack Answersheet is using to make questions"
+            " should clear its Excluded field. It lead to Answersheet using"
+            " all Words from Stack."
         ),
     )
 
@@ -108,7 +118,11 @@ class AnswerSheet(models.Model):
             if regenerate_stack:
                 words = stack.select_new_words(self.stack_size)
             else:
+                # TODO Possibly remove regenerate from get_words
+                if self.clear_excluded:
+                    stack.clear_excluded()
                 words = stack.get_words()
+
         else:
             words = select_words(
                 self.learner,
@@ -137,7 +151,8 @@ class AnswerSheet(models.Model):
         for answer in self.correct_answers:
             if answer in self.learner_answers:
                 word = Word.objects.get(word=answer)
-                # TODO: Possibly remove this request by using word id for optimization.
+                # TODO: Possibly remove this request by using word id for
+                #  optimization.
                 correct_answer = self.normalize(self.correct_answers[answer])
                 learner_answer = self.normalize(self.learner_answers[answer])
                 correct = correct_answer == learner_answer

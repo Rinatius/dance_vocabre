@@ -9,7 +9,7 @@ from dance.const import (
     INCORRECT_CHOICE,
     CORRECT_CHOICE,
 )
-from dance.models import Learner, System, AnswerSheet, Encounter, Word
+from dance.models import Learner, System, AnswerSheet, Encounter, Word, Stack
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
 
@@ -29,7 +29,11 @@ class AnswerSheetTest(APITestCase):
         self.client = APIClient()
 
     def create_answersheet(
-        self, question_type, stack_size=10, regenerate_stack=False
+        self,
+        question_type,
+        stack_size=10,
+        regenerate_stack=False,
+        clear_excluded=False,
     ):
         data = {
             "type": question_type,
@@ -38,6 +42,7 @@ class AnswerSheetTest(APITestCase):
             "native_language": Languages.RUSSIAN,
             "regenerate_stack": regenerate_stack,
             "stack_size": stack_size,
+            "clear_excluded": clear_excluded,
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
@@ -478,6 +483,20 @@ class AnswerSheetTest(APITestCase):
                     f" {question_type} question type"
                 ),
             )
+
+            answersheet_excluded_cleared = self.create_answersheet(
+                question_type, regenerate_stack=False, clear_excluded=True
+            )
+            self.assertEqual(
+                set(answersheet_excluded_cleared.data["uischema"]["ui:order"]),
+                set(response.data["uischema"]["ui:order"]),
+                (
+                    "Original answersheet and the one created with"
+                    " clear_excluded set to True do not match for"
+                    f" {question_type} question type"
+                ),
+            )
+
             answersheet_with_regenerate = self.create_answersheet(
                 question_type, regenerate_stack=True
             )
