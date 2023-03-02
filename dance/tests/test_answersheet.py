@@ -10,7 +10,15 @@ from dance.const import (
     CORRECT_CHOICE,
 )
 
-from dance.models import Learner, System, AnswerSheet, Encounter, Word, User, Stack
+from dance.models import (
+    Learner,
+    System,
+    AnswerSheet,
+    Encounter,
+    Word,
+    User,
+    Stack,
+)
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
 
@@ -18,9 +26,7 @@ from dance.vocabularies.vocabularies import TEST_VOCAB
 class AnswerSheetTest(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create(
-            username="test",
-            email="test@email.com",
-            password="test"
+            username="test", email="test@email.com", password="test"
         )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
