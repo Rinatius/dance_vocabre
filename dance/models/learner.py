@@ -1,7 +1,10 @@
 from django.db import models
+
+from .base import BaseDatesModel
 from .system import System
 
-class Learner(models.Model):
+
+class Learner(BaseDatesModel):
     external_id = models.CharField(max_length=200)
     system = models.ForeignKey(
             System,

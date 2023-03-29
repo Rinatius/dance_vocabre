@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Encounter
 from .models.answersheet import AnswerSheet
@@ -13,10 +14,13 @@ from .utils.answergrader import generate_encounters_and_score
 
 
 class AnswerSheetViewSet(viewsets.ModelViewSet):
+
+    permission_classes = (IsAuthenticated, )
+
     def get_serializer_class(self):
         if self.action == "create":
             return AnswerSheetCreateSerializer
-        elif self.action == "update":
+        elif self.action == "update" or self.action == "partial_update":
             return AnswerSheetEditSerializer
         else:
             return AnswerSheetSerializer

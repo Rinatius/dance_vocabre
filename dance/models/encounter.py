@@ -1,11 +1,12 @@
 from django.db import models
 
+from .base import BaseDatesModel
 from .learner import Learner
 from .word import Word
 from ..const import EncounterType
 
 
-class Encounter(models.Model):
+class Encounter(BaseDatesModel):
     word = models.ForeignKey(
         Word,
         on_delete=models.CASCADE,

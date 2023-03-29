@@ -1,5 +1,7 @@
 from django.db import models
 
+from dance.models.base import BaseDatesModel
 
-class System(models.Model):
+
+class System(BaseDatesModel):
     pass

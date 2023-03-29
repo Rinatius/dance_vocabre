@@ -9,13 +9,28 @@ from dance.const import (
     INCORRECT_CHOICE,
     CORRECT_CHOICE,
 )
-from dance.models import Learner, System, AnswerSheet, Encounter, Word
+
+from dance.models import (
+    Learner,
+    System,
+    AnswerSheet,
+    Encounter,
+    Word,
+    User,
+    Stack,
+)
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
 
 
 class AnswerSheetTest(APITestCase):
     def setUp(self) -> None:
+        self.user = User.objects.create(
+            username="test", email="test@email.com", password="test"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
         lines = TEST_VOCAB.splitlines()
         save_words_to_db(
             lines,
@@ -26,16 +41,24 @@ class AnswerSheetTest(APITestCase):
         self.learner = Learner.objects.create(
             external_id=1, system=self.system
         )
-        self.client = APIClient()
 
-    def create_answersheet(self, question_type):
+    def create_answersheet(
+        self,
+        question_type,
+        stack_size=10,
+        regenerate_stack=False,
+        clear_excluded=False,
+        review=False,
+    ):
         data = {
             "type": question_type,
             "learner": self.learner.pk,
             "test_language": Languages.ENGLISH,
             "native_language": Languages.RUSSIAN,
-            "regenerate_stack": False,
-            "stack_size": 10,
+            "regenerate_stack": regenerate_stack,
+            "stack_size": stack_size,
+            "clear_excluded": clear_excluded,
+            "review": review,
         }
         return self.client.post(reverse("answersheet-list"), data=data)
 
@@ -302,6 +325,35 @@ class AnswerSheetTest(APITestCase):
 
         self.check_content(QuestionType.SPELL_QUIZ, content)
 
+    def check_encounters_number(
+        self, word_key, question_type, correct_count=1, incorrect_count=1
+    ):
+        encounter_correct_count = Encounter.objects.filter(
+            word__word=word_key,
+            encounter_type=(question_type + CORRECT_CHOICE),
+        ).count()
+        encounter_incorrect_count = Encounter.objects.filter(
+            word__word=word_key,
+            encounter_type=(question_type + INCORRECT_CHOICE),
+        ).count()
+
+        self.assertEqual(
+            encounter_correct_count,
+            correct_count,
+            (
+                "Incorrect number of encounters for correct answer to"
+                f" {QuestionType} type question created."
+            ),
+        )
+        self.assertEqual(
+            encounter_incorrect_count,
+            incorrect_count,
+            (
+                "Incorrect number of encounters for incorrect answer to"
+                f" {question_type} type question created."
+            ),
+        )
+
     def check_answersheet_answering(
         self,
         answersheet_id,
@@ -320,16 +372,19 @@ class AnswerSheetTest(APITestCase):
         response = self.client.patch(answers_update_url, data, format="json")
         question_type = response.data["type"]
 
-        encounter_correct_count = Encounter.objects.filter(
-            word__word=correct_answer_key,
-            encounter_type=(question_type + CORRECT_CHOICE),
-        ).count()
-        encounter_incorrect_count = Encounter.objects.filter(
-            word__word=correct_answer_key,
-            encounter_type=(question_type + INCORRECT_CHOICE),
-        ).count()
+        self.check_encounters_number(
+            question_type=question_type,
+            word_key=correct_answer_key,
+            correct_count=1,
+            incorrect_count=0,
+        )
+        self.check_encounters_number(
+            question_type=question_type,
+            word_key=incorrect_answer_key,
+            correct_count=0,
+            incorrect_count=1,
+        )
 
-        print(f"------------RESPONSE DATA {response.data} ------------------")
         self.assertEqual(
             response.data["score"],
             10,
@@ -338,26 +393,68 @@ class AnswerSheetTest(APITestCase):
                 " type answersheet."
             ),
         )
-        self.assertEqual(
-            encounter_correct_count,
-            1,
-            (
-                "Incorrect number of encounters for correct answer to"
-                f" {question_type} type question created."
-            ),
+
+    def mark_as(self, known=False, words_count=10):
+        response = self.create_answersheet(
+            QuestionType.KNOWN_SELECTION,
+            stack_size=words_count,
+            regenerate_stack=True,
         )
-        self.assertEqual(
-            encounter_incorrect_count,
-            1,
-            (
-                "Incorrect number of encounters for incorrect answer to"
-                f" {question_type} type question created."
-            ),
+        answersheet_id = response.data["id"]
+        answersheet = AnswerSheet.objects.get(pk=answersheet_id)
+        answers = answersheet.correct_answers
+        if not known:
+            for word in answersheet.correct_answers:
+                answers[word] = not answersheet.correct_answers[word]
+
+        data = {"learner_answers": answers}
+        answers_update_url = reverse(
+            "answersheet-detail", kwargs={"pk": answersheet_id}
         )
+        return self.client.patch(answers_update_url, data, format="json")
+
+    def mark_as_unknown(self, words_count=10):
+        return self.mark_as(known=False, words_count=words_count)
+
+    def mark_as_known(self, words_count=10):
+        return self.mark_as(known=True, words_count=words_count)
+
+    def test_mark_as_unknown(self):
+        response = self.mark_as_unknown(10)
+        for word in response.data["uischema"]["ui:order"]:
+            self.check_encounters_number(
+                word_key=word,
+                question_type=QuestionType.KNOWN_SELECTION,
+                correct_count=0,
+                incorrect_count=1,
+            )
+        self.assertEqual(response.data["score"], 0)
+
+    def test_mark_as_known(self):
+        response = self.mark_as_known(10)
+        for word in response.data["uischema"]["ui:order"]:
+            self.check_encounters_number(
+                word_key=word,
+                question_type=QuestionType.KNOWN_SELECTION,
+                correct_count=1,
+                incorrect_count=0,
+            )
+        self.assertEqual(response.data["score"], 100)
 
     def test_answersheet_answering(self):
-        for i, question_type in enumerate(QuestionType.choices):
-            response = self.create_answersheet(question_type[0])
+        unknown_number = 10
+        self.mark_as_unknown(unknown_number)
+        question_types = [
+            QuestionType.FAMILIAR_SELECTION,
+            QuestionType.MULTI_CHOICE_QUIZ,
+            QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ,
+            QuestionType.SPELL_QUIZ,
+        ]
+
+        for question_type in question_types:
+            response = self.create_answersheet(
+                question_type, regenerate_stack=True
+            )
 
             correct_answer_key = "go"
             incorrect_answer_key = "car"
@@ -365,12 +462,12 @@ class AnswerSheetTest(APITestCase):
             incorrect_answer = False
 
             if (
-                question_type[0] == QuestionType.SPELL_QUIZ
-                or question_type[0] == QuestionType.MULTI_CHOICE_QUIZ
+                question_type == QuestionType.SPELL_QUIZ
+                or question_type == QuestionType.MULTI_CHOICE_QUIZ
             ):
                 correct_answer = "go"
                 incorrect_answer = "carrrr"
-            elif question_type[0] == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+            elif question_type == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
                 correct_answer = "идти, ехать"
                 incorrect_answer = "мшина"
 
@@ -381,8 +478,133 @@ class AnswerSheetTest(APITestCase):
                 correct_answer,
                 incorrect_answer,
             )
+            answersheet_without_regenerate = self.create_answersheet(
+                question_type, regenerate_stack=False
+            )
+            self.assertNotIn(
+                correct_answer_key,
+                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered correctly is included into"
+                    " answersheet without stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+            self.assertIn(
+                incorrect_answer_key,
+                answersheet_without_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered incorrectly is not included"
+                    " into answersheet without stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+
+            answersheet_excluded_cleared = self.create_answersheet(
+                question_type, regenerate_stack=False, clear_excluded=True
+            )
+            self.assertEqual(
+                set(answersheet_excluded_cleared.data["uischema"]["ui:order"]),
+                set(response.data["uischema"]["ui:order"]),
+                (
+                    "Original answersheet and the one created with"
+                    " clear_excluded set to True do not match for"
+                    f" {question_type} question type"
+                ),
+            )
+
+            answersheet_with_regenerate = self.create_answersheet(
+                question_type, regenerate_stack=True
+            )
+            if question_type == QuestionType.SPELL_QUIZ:
+                self.assertNotIn(
+                    correct_answer_key,
+                    answersheet_with_regenerate.data["uischema"]["ui:order"],
+                    (
+                        "Question that was answered correctly is included"
+                        " into answersheet with stack regeneration for"
+                        f" {question_type} question type"
+                    ),
+                )
+            else:
+                self.assertIn(
+                    correct_answer_key,
+                    answersheet_with_regenerate.data["uischema"]["ui:order"],
+                    (
+                        "Question that was answered correctly is NOT included"
+                        " into answersheet with stack regeneration for"
+                        f" {question_type} question type"
+                    ),
+                )
+            self.assertIn(
+                incorrect_answer_key,
+                answersheet_with_regenerate.data["uischema"]["ui:order"],
+                (
+                    "Question that was answered incorrectly is not"
+                    " included into answersheet with stack regeneration for"
+                    f" {question_type} question type"
+                ),
+            )
+
         self.assertEqual(
             Encounter.objects.count(),
-            len(QuestionType.choices) * 2,
+            len(QuestionType.choices) * 2
+            + unknown_number
+            - 2,  # One correct and one incorrect encounter for all
+            # question types (this test will fail if new question type
+            # is added but not tested) excluding Known Selection type plus
+            # all incorrect known selection encounters that were created
+            # previously
             "Incorrect number of encounters created.",
         )
+
+    def test_answersheet_answering_review(self):
+        unknown_number = 10
+        self.mark_as_unknown(unknown_number)
+        question_types = [
+            QuestionType.FAMILIAR_SELECTION,
+            QuestionType.MULTI_CHOICE_QUIZ,
+            QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ,
+            QuestionType.SPELL_QUIZ,
+        ]
+
+        for question_type in question_types:
+            response = self.create_answersheet(
+                question_type, regenerate_stack=True, review=True
+            )
+
+            correct_answer_key = "go"
+            incorrect_answer_key = "car"
+            correct_answer = True
+            incorrect_answer = False
+
+            if (
+                question_type == QuestionType.SPELL_QUIZ
+                or question_type == QuestionType.MULTI_CHOICE_QUIZ
+            ):
+                correct_answer = "go"
+                incorrect_answer = "carrrr"
+            elif question_type == QuestionType.MULTI_CHOICE_IN_NATIVE_QUIZ:
+                correct_answer = "идти, ехать"
+                incorrect_answer = "мшина"
+
+            self.check_answersheet_answering(
+                response.data["id"],
+                correct_answer_key,
+                incorrect_answer_key,
+                correct_answer,
+                incorrect_answer,
+            )
+            answersheet_with_review = self.create_answersheet(
+                question_type, regenerate_stack=False
+            )
+
+            self.assertEqual(
+                set(answersheet_with_review.data["uischema"]["ui:order"]),
+                set(response.data["uischema"]["ui:order"]),
+                (
+                    "Original answersheet with review enabled and the one"
+                    " created afterwards do not match for"
+                    f" {question_type} question type"
+                ),
+            )

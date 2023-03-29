@@ -25,6 +25,8 @@ class AnswerSheetCreateSerializer(serializers.ModelSerializer):
             "native_language",
             "collection",
             "regenerate_stack",
+            "clear_excluded",
+            "review",
             "stack_size",
             "questions",
             "uischema",

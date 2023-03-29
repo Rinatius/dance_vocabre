@@ -8,3 +8,4 @@ from .word import Word
 from .stack import Stack
 from .collection import Collection
 from .answersheet import AnswerSheet
+from .user import User

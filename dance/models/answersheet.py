@@ -1,6 +1,7 @@
 from django.db import models, transaction
 
 from . import Stack, Collection, Word, Encounter
+from .base import BaseDatesModel
 from .learner import Learner
 from ..utils.questiongenerator import make_questions
 from ..utils.answergrader import grade
@@ -14,7 +15,7 @@ from ..const import (
 from ..utils.wordselector import select_words
 
 
-class AnswerSheet(models.Model):
+class AnswerSheet(BaseDatesModel):
 
     type = models.CharField(max_length=2, choices=QuestionType.choices)
 
@@ -76,9 +77,28 @@ class AnswerSheet(models.Model):
     stack_size = models.IntegerField(blank=True, null=True)
     regenerate_stack = models.BooleanField(
         default=False,
+        blank=True,
         help_text=(
-            "Flag indicating that Stack Answrsheet is using to make questions"
+            "Flag indicating that Stack Answersheet is using to make questions"
             " should be regenerated"
+        ),
+    )
+    clear_excluded = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text=(
+            "Flag indicating that Stack Answersheet is using to make questions"
+            " should clear its Excluded field. It leads to Answersheet using"
+            " all Words from Stack."
+        ),
+    )
+    review = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text=(
+            "Flag indicating that generated Answersheet will be used for"
+            " review and correctly answered questions will not be excluded"
+            " from Stack."
         ),
     )
 
@@ -108,7 +128,11 @@ class AnswerSheet(models.Model):
             if regenerate_stack:
                 words = stack.select_new_words(self.stack_size)
             else:
+                # TODO Possibly remove regenerate from get_words
+                if self.clear_excluded:
+                    stack.clear_excluded()
                 words = stack.get_words()
+
         else:
             words = select_words(
                 self.learner,
@@ -137,7 +161,8 @@ class AnswerSheet(models.Model):
         for answer in self.correct_answers:
             if answer in self.learner_answers:
                 word = Word.objects.get(word=answer)
-                # TODO: Possibly remove this request by using word id for optimization.
+                # TODO: Possibly remove this request by using word id for
+                #  optimization.
                 correct_answer = self.normalize(self.correct_answers[answer])
                 learner_answer = self.normalize(self.learner_answers[answer])
                 correct = correct_answer == learner_answer
@@ -169,7 +194,7 @@ class AnswerSheet(models.Model):
         with transaction.atomic():
             self.save()
             Encounter.objects.bulk_create(encounters)
-            if stack:
+            if stack and not self.review:
                 stack.exclude_words(correct_words)
 
     @staticmethod

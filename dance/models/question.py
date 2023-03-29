@@ -1,9 +1,11 @@
 from django.db import models
+
+from .base import BaseDatesModel
 from .context import ConText
 from .word import Word
 
 
-class Question(models.Model):
+class Question(BaseDatesModel):
     schema = models.TextField(
             help_text="Question JSON Schema"
             )
