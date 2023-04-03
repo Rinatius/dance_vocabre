@@ -5,13 +5,13 @@ from ..const import QuestionType
 
 
 def make_questions(words, answersheet_type, native_language):
-    questions = {"properties": {}}
+    questions = {"properties": {}, "dependencies": {}}
     answers = {}
     uischema = {"ui:order": []}
 
     # words = select_words_for_answersheet(words_pool, learner, answersheet_type)
     word_translations = translate_words(words, native_language)
-
+    print("START")
     for word in word_translations:
         key = word["word"]
         questions["properties"][key], answers[key] = make_question(
@@ -20,8 +20,19 @@ def make_questions(words, answersheet_type, native_language):
             word["translations"],
             word_translations,
         )
+        questions["dependencies"][key] = make_translation(
+            key,
+            word["word"],
+            word["translations"]
+        )
+        uischema[key] = make_widget()
+        uischema[key+"_translation"] = make_widget()
         uischema["ui:order"].append(key)
-
+        uischema["ui:order"].append(key+"_translation")
+    print(str(questions).replace("'", '"').replace("True", "true").replace(
+        "False", "false"))
+    print(str(uischema).replace("'", '"').replace("True", "true").replace(
+        "False", "false"))
     return questions, uischema, answers
 
 
@@ -35,6 +46,49 @@ def make_question(question_type, word, translation, all_word_translations):
     return make_selection_question(word, translation)
 
 
+def make_translation(key, word, translation):
+    ui_schema = {
+        "oneOf": [
+            {
+                "properties": {
+                    key: {
+                        "enum": [
+                            1
+                        ]
+                    }
+                }
+            },
+            {
+                "properties": {
+                    key: {
+                        "enum": [
+                            -1
+                        ]
+                    },
+                    key+"_translation": {
+                        "type": "string",
+                        "title": f"Перевод слова: {', '.join(translation).capitalize()}",
+                    }
+                }
+            }
+        ]
+    }
+    return ui_schema
+
+
+def make_widget(type_="radio"):
+    return {
+        "ui:widget": type_,
+    }
+
+
+def make_widget_translation(type_="radio"):
+    return {
+        # "ui:widget": type_,
+        "ui:disable": True
+    }
+
+
 def make_spell_question(word, translation):
     question = {
         "type": "string",
@@ -46,10 +100,18 @@ def make_spell_question(word, translation):
 
 def make_selection_question(word, translation):
     question = {
-        "type": "boolean",
+        "type": "integer",
         "title": word,
+        "enumNames": [
+            "Знаю",
+            "Не знаю"
+        ],
+        "enum": [
+            1,
+            -1
+        ]
     }
-    answer = True
+    answer = False
     return question, answer
 
 
