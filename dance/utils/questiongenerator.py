@@ -11,7 +11,7 @@ def make_questions(words, answersheet_type, native_language):
 
     # words = select_words_for_answersheet(words_pool, learner, answersheet_type)
     word_translations = translate_words(words, native_language)
-    print("START")
+    # print("START")
     for word in word_translations:
         key = word["word"]
         questions["properties"][key], answers[key] = make_question(
@@ -29,10 +29,10 @@ def make_questions(words, answersheet_type, native_language):
         uischema[key+"_translation"] = make_widget()
         uischema["ui:order"].append(key)
         uischema["ui:order"].append(key+"_translation")
-    print(str(questions).replace("'", '"').replace("True", "true").replace(
-        "False", "false"))
-    print(str(uischema).replace("'", '"').replace("True", "true").replace(
-        "False", "false"))
+    # print(str(questions).replace("'", '"').replace("True", "true").replace(
+    #     "False", "false"))
+    # print(str(uischema).replace("'", '"').replace("True", "true").replace(
+    #     "False", "false"))
     return questions, uischema, answers
 
 
