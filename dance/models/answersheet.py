@@ -1,6 +1,6 @@
 from django.db import models, transaction
 
-from . import Stack, Collection, Word, Encounter
+from . import Stack, Collection, Word, Encounter, System
 from .base import BaseDatesModel
 from .learner import Learner
 from ..utils.questiongenerator import make_questions
@@ -48,6 +48,13 @@ class AnswerSheet(BaseDatesModel):
         on_delete=models.CASCADE,
         related_name="responses",
         help_text="Responding Learner",
+    )
+
+    system = models.ForeignKey(
+        System,
+        on_delete=models.CASCADE,
+        related_name="answersheets",
+        help_text="System of learners",
     )
 
     score = models.IntegerField(

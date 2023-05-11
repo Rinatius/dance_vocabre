@@ -17,7 +17,6 @@ from dance.models import (
     Encounter,
     Word,
     User,
-    Stack,
 )
 from dance.utils.csv_to_words_converter import save_words_to_db
 from dance.vocabularies.vocabularies import TEST_VOCAB
@@ -52,7 +51,8 @@ class AnswerSheetTest(APITestCase):
     ):
         data = {
             "type": question_type,
-            "learner": self.learner.pk,
+            "system": self.system.pk,
+            "learner_external_id": self.learner.external_id,
             "test_language": Languages.ENGLISH,
             "native_language": Languages.RUSSIAN,
             "regenerate_stack": regenerate_stack,
