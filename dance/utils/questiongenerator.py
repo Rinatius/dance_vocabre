@@ -14,7 +14,7 @@ def make_questions(words, answersheet_type, native_language):
 
     for word in word_translations:
         key = word["word"]
-        questions["types"] = "object"
+        questions["type"] = "object"
         questions["properties"][key], answers[key] = make_question(
             answersheet_type,
             word["word"],
